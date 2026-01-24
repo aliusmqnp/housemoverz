@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HM-2026 | Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .navy-brand { background: #0A1D37; }
+        .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        input:focus { outline: none; border: 2px solid #2563eb !important; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen pb-24">
+
+    <header class="navy-brand text-white p-6 rounded-b-[2.5rem] shadow-xl">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-black italic tracking-tighter">HOUSEMOVERZ</h1>
+                <p class="text-[10px] text-blue-300 font-bold uppercase tracking-widest">Precision Logistics v4.1</p>
+            </div>
+            <div class="h-10 w-10 bg-white rounded-xl flex items-center justify-center">
+                <i class="fas fa-truck-moving text-blue-900"></i>
+            </div>
+        </div>
+    </header>
+
+    <main class="p-4 max-w-lg mx-auto">
+        
+        <div id="view-add" class="space-y-4">
+            <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+                <h2 class="font-black text-gray-800 uppercase text-xs mb-4">Create Estimate</h2>
+                <div class="space-y-3">
+                    <input type="text" id="cName" placeholder="Customer Name" class="w-full p-4 bg-gray-50 rounded-2xl border-none">
+                    <div class="flex gap-2">
+                        <input type="number" id="cPrice" placeholder="Price (AED)" class="w-1/2 p-4 bg-gray-50 rounded-2xl border-none">
+                        <input type="date" id="cDate" class="w-1/2 p-4 bg-gray-50 rounded-2xl border-none text-gray-400">
+                    </div>
+                    <textarea id="cNote" placeholder="Service Details (Handyman, Packing...)" class="w-full p-4 bg-gray-50 rounded-2xl border-none h-24"></textarea>
+                    
+                    <button onclick="saveLead()" class="w-full navy-brand text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition">
+                        SAVE & OPEN WHATSAPP
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-list" class="hidden space-y-3">
+            <div class="flex justify-between px-2 items-center">
+                <h2 class="font-black text-gray-400 uppercase text-[10px]">Recent Records (Max 40)</h2>
+                <button onclick="clearHistory()" class="text-red-400 text-[10px] font-bold">CLEAR ALL</button>
+            </div>
+            <div id="leads-container"></div>
+        </div>
+    </main>
+
+    <nav class="fixed bottom-6 left-6 right-6 bg-white/90 backdrop-blur-md h-20 rounded-[2rem] shadow-2xl border border-white/20 flex justify-around items-center px-4 safe-area-bottom">
+        <button onclick="showTab('add')" id="btn-add" class="text-blue-600 flex flex-col items-center">
+            <i class="fas fa-plus-circle text-2xl"></i>
+            <span class="text-[8px] font-bold mt-1">NEW</span>
+        </button>
+        <button onclick="showTab('list')" id="btn-list" class="text-gray-300 flex flex-col items-center">
+            <i class="fas fa-list-ul text-2xl"></i>
+            <span class="text-[8px] font-bold mt-1">HISTORY</span>
+        </button>
+    </nav>
+
+    <script>
+        let db = JSON.parse(localStorage.getItem('hm_ops')) || [];
+
+        function showTab(tab) {
+            document.getElementById('view-add').classList.toggle('hidden', tab !== 'add');
+            document.getElementById('view-list').classList.toggle('hidden', tab !== 'list');
+            document.getElementById('btn-add').classList.toggle('text-blue-600', tab === 'add');
+            document.getElementById('btn-add').classList.toggle('text-gray-300', tab !== 'add');
+            document.getElementById('btn-list').classList.toggle('text-blue-600', tab === 'list');
+            document.getElementById('btn-list').classList.toggle('text-gray-300', tab !== 'list');
+            if(tab === 'list') renderLeads();
+        }
+
+        function saveLead() {
+            const name = document.getElementById('cName').value;
+            const price = document.getElementById('cPrice').value;
+            const note = document.getElementById('cNote').value;
+            const date = document.getElementById('cDate').value;
+
+            if(!name || !price) return alert("Enter Name and Price");
+
+            const entry = { name, price, note, date, id: Date.now() };
+            db.unshift(entry);
+            if(db.length > 40) db.pop();
+            
+            localStorage.setItem('hm_ops', JSON.stringify(db));
+            
+            const msg = `*HOUSEMOVERZ ESTIMATE*%0AClient: ${name}%0AAmount: AED ${price}%0ADate: ${date}%0ANote: ${note}`;
+            window.open(`https://wa.me/?text=${msg}`, '_blank');
+            
+            document.getElementById('cName').value = '';
+            document.getElementById('cPrice').value = '';
+            showTab('list');
+        }
+
+        function renderLeads() {
+            const container = document.getElementById('leads-container');
+            container.innerHTML = db.length ? '' : '<p class="text-center py-10 text-gray-400">No records yet.</p>';
+            db.forEach(item => {
+                container.innerHTML += `
+                    <div class="bg-white p-5 rounded-3xl shadow-sm border-l-4 border-blue-600 flex justify-between items-center">
+                        <div>
+                            <p class="font-black text-gray-800 uppercase text-sm">${item.name}</p>
+                            <p class="text-[10px] text-gray-400 font-bold">${item.date || 'No Date'}</p>
+                        </div>
+                        <p class="text-blue-600 font-black tracking-tighter">AED ${item.price}</p>
+                    </div>`;
+            });
+        }
+
+        function clearHistory() { if(confirm("Delete all data?")) { db = []; localStorage.clear(); renderLeads(); } }
+    </script>
+</body>
+</html>
